@@ -1,6 +1,8 @@
 # %%
 import os
 import pandas as pd
+import yfinance as yf
+import datetime as dt
 import matplotlib.pyplot as plt
 
 absolute_path = os.path.abspath(__file__)
@@ -69,8 +71,9 @@ def gen_filter_df(df, y_start=int, y_end=""):
     """filter dataframe with given year"""
     if not y_end:
         y_end = y_start
-    filter_df = df[(df['Date'] > pd.Timestamp(y_start, 1, 1)) &
-                   (df['Date'] < pd.Timestamp(y_end, 12, 31))].copy()
+    df['Date'] = pd.to_datetime(df['Date'], format='%Y-%m-%d')
+    filter_df = df.loc[(df['Date'] >= f'{y_start}-01-01')
+                     & (df['Date'] <= f'{y_end}-12-31')]
     return filter_df
 
 
@@ -88,6 +91,7 @@ def gen_graph(line_input, df_announce, name=str, col_name=str, y="all"):
     plt.savefig(output1_folder_path + name + "_" +
                 col_name.lower() + "_" + str(y), bbox_inches='tight')
     plt.clf()
+    plt.close()
 
 
 def gen_multi_graph(df, df_vol, df_announce, line_name, y):
@@ -106,10 +110,18 @@ def gen_multi_graph(df, df_vol, df_announce, line_name, y):
 
 
 # %%
+start = dt.datetime(2016,1,1)
+end = dt.datetime(2022,12,31)
 # equity market
-ftse = get_data("FTSE100.csv")
-s_and_p = get_data("S&P500.csv")
-eurostoxx = get_data("EuroStoxx50.csv")
+# ftse = get_data("FTSE100.csv")
+# s_and_p = get_data("S&P500.csv")
+# eurostoxx = get_data("EuroStoxx50.csv")
+ftse = yf.download("^FTSE", start, end).reset_index()
+# ftse["Date"] = ftse["Date"].dt.date
+s_and_p = yf.download("^GSPC", start, end).reset_index()
+# s_and_p["Date"] = s_and_p["Date"].dt.date
+eurostoxx = yf.download("^STOXX50E", start, end).reset_index()
+# eurostoxx["Date"] = eurostoxx["Date"].dt.date
 ftse_vol = gen_vol(ftse)
 s_and_p_vol = gen_vol(s_and_p)
 eurostoxx_vol = gen_vol(eurostoxx)
@@ -124,6 +136,7 @@ reer = get_data("REER.xlsx")
 google = get_data("google-search.csv")
 # announcement
 announce = get_data("announcement.xlsx")
+# announce["Date"] = announce["Date"].dt.date
 
 # %%
 # Graphical Analysis
