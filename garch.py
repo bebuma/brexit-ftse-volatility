@@ -30,7 +30,7 @@ def output_sim_returns(garch_parameters, num_days_to_simulate=1000):
     return sim_data['data']
 
 
-def simulate_returns(returns, num_sims=10, num_days_to_simulate=1000):
+def simulate_returns(returns, num_sims=100, num_days_to_simulate=1000):
     """simulate returns from providing data"""
     sim_df = pd.DataFrame(index=range(num_days_to_simulate), columns=range(num_sims))
     result = run_garch_model(returns)
@@ -46,6 +46,14 @@ start = dt.datetime(2000,1,1)
 end = dt.datetime(2022,12,31)
 print("Start retrieving data from Yahoo Finance")
 ftse = yf.download("^FTSE", start, end)
+# plot trends
+print("Plot trends")
+plt.figure(figsize=(15, 5))
+plt.plot(ftse["Close"])
+plt.title("Close")
+plt.savefig(output2_folder_path + "ftse_close", bbox_inches='tight')
+plt.clf()
+plt.close()
 # calculate returns
 print("Generate returns")
 returns = 100 * ftse.Close.pct_change().dropna()
@@ -112,4 +120,25 @@ plt.savefig(output2_folder_path + "simu_100", bbox_inches='tight')
 plt.clf()
 plt.close()
 
-print("Done volatility analysis by GARCH model!")
+# Compare performance
+# sim_df['model_mean'] = sim_df.mean(axis=1)
+# for y in [10, 5, 1]:
+#     real_re = returns.rolling(y*250).mean()
+#     model_re = sim_df["model_mean"].rolling(y*250).mean()
+#     print(f"Mean of {y} year(s) between Real Returns & Model Prediction \n{real_re.dropna().mean()} & {model_re.dropna().mean()}\n")
+
+# comp_df = pd.DataFrame(returns).reset_index()
+# comp_df["model_mean"] = sim_df['model_mean']
+# comp_df = comp_df.set_index("Date")
+
+# # Bull 2003-2007
+# real_re = comp_df.loc["2003-01-01": "2007-12-31"]["Close"].mean()
+# model_re = comp_df.loc["2003-01-01": "2007-12-31"]["model_mean"].mean()
+# print(f"Bull market (2003-2007) between Real Returns & Model Prediction \n{real_re} & {model_re}\n")
+
+# # Bear 2007-2009
+# real_re = comp_df.loc["2007-01-01": "2009-12-31"]["Close"].mean()
+# model_re = comp_df.loc["2007-01-01": "2009-12-31"]["model_mean"].mean()
+# print(f"Bull market (2007-2009) between Real Returns & Model Prediction \n{real_re} & {model_re}\n")
+
+# print("Done volatility analysis by GARCH model!")

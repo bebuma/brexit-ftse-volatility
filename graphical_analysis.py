@@ -82,6 +82,7 @@ def gen_graph(line_input, df_announce, line_name=str, col_name=str, y="all"):
         plt.plot(line_input["Date"], line_input[col_name])
     for xc in df_announce["Date"]:
         plt.axvline(x=xc, color="red", ls="dotted")
+    plt.title("Google search 'BREXIT'")
     plt.savefig(output1_folder_path + line_name + "_" +
                 col_name.lower() + "_" + str(y), bbox_inches='tight')
     plt.clf()
@@ -104,7 +105,12 @@ def gen_multi_graph_multi_line(line_input_1, line_input_2, df_announce, line_nam
     for xc in df_announce["Date"]:
         axs[0].axvline(xc, color="red", ls="dotted")
         axs[1].axvline(xc, color="red", ls="dotted")
-    fig.set_size_inches(15, 6)
+    fig.set_size_inches(15, 5)
+    fig.suptitle(f"LIBOR during {y}")
+    axs[0].set_title("Rates", y=1.0, pad=-14, position=(0.05,0.6))
+    axs[1].set_title("Changes", y=1.0, pad=-14, position=(0.05,0.6))
+    if y == 2017:
+        axs[1].set_title("Changes", y=1.0, pad=-14, position=(0.12,0.6))
     fig.savefig(output1_folder_path + "libor_vol" +
                 "_" + str(y), bbox_inches='tight')
     fig.clear(True)
@@ -124,7 +130,21 @@ def gen_multi_graph(df, df_vol, df_announce, line_name, y):
         axs[0].axhline(100, color="lightgrey", zorder=1)
     if line_name in ["ftse", "s&p", "euro", "reer_vol"]:
         axs[1].axhline(0, color="lightgrey", zorder=1)
-    fig.set_size_inches(15, 6)
+    fig.set_size_inches(15, 5)
+    if line_name == "reer_vol":
+        fig.suptitle("GBP REER from 2016 to 2021")
+        axs[0].set_title('Index', y=1.0, pad=-14, position=(0.05,0.6))
+        axs[1].set_title('Changes', y=1.0, pad=-14, position=(0.05,0.6))
+    else:
+        if line_name == "ftse":
+            _name = "FTSE 100"
+        if line_name == "s&p":
+            _name = "S&P 500"
+        if line_name == "euro":
+            _name = "EuroStoxx 50"
+        fig.suptitle(f"{_name} Index during {y}")
+        axs[0].set_title('Index', y=1.0, pad=-14, position=(0.05,0.6))
+        axs[1].set_title('Returns', y=1.0, pad=-14, position=(0.05,0.6))
     fig.savefig(output1_folder_path + line_name +
                 "_" + str(y), bbox_inches='tight')
     fig.clear(True)
@@ -177,7 +197,7 @@ google = get_raw_data("google-search.csv")
 announce = get_raw_data("announcement.xlsx")
 
 # Graphical Analysis
-for y in list(range(2016, 2022)):
+for y in list(range(2016,2021)):
     filter_annouce = gen_filter_df(announce, y)
     # equity market filter
     for line_name in ["ftse", "s&p", "euro"]:
