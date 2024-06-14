@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from statsmodels.graphics.tsaplots import plot_pacf
 
 absolute_path = os.path.abspath(__file__)
-output_folder = os.path.dirname(absolute_path) + "/output_mgarch/"
+output_folder = os.path.dirname(absolute_path) + "/output_garch/"
 
 def retrieve_stock_data(symbol, start_date, end_date):
     """Retrieve stock data from Yahoo Finance."""
