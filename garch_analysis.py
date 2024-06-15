@@ -7,106 +7,124 @@ from arch import arch_model
 import matplotlib.pyplot as plt
 from statsmodels.graphics.tsaplots import plot_pacf
 
-absolute_path = os.path.abspath(__file__)
-output_folder = os.path.dirname(absolute_path) + "/output_garch/"
+class GARCHAnalysis:
+    def __init__(self, symbol, start_date, end_date, p, q, output_folder):
+        self.symbol = symbol
+        self.start_date = start_date
+        self.end_date = end_date
+        self.p = p
+        self.q = q
+        self.output_folder = output_folder
+        self.data = None
+        self.returns = None
+        self.garch_result = None
+        
+        if not os.path.exists(output_folder):
+            os.makedirs(output_folder)
 
-def retrieve_stock_data(symbol, start_date, end_date):
-    """Retrieve stock data from Yahoo Finance."""
-    return yf.download(symbol, start=start_date, end=end_date)
+    def retrieve_stock_data(self):
+        """Retrieve stock data from Yahoo Finance."""
+        self.data = yf.download(self.symbol, start=self.start_date, end=self.end_date)
 
-def calculate_returns(closing_prices):
-    """Calculate daily returns from closing prices."""
-    return 100 * closing_prices.pct_change().dropna()
+    def calculate_returns(self):
+        """Calculate daily returns from closing prices."""
+        self.returns = 100 * self.data['Close'].pct_change().dropna()
 
-def plot_stock_data(data, title, filename):
-    """Plot and save stock data."""
-    plt.figure(figsize=(15, 5))
-    plt.plot(data)
-    plt.title(title)
-    plt.savefig(filename, bbox_inches='tight')
-    plt.close()
+    def plot_data(self, data, title, filename):
+        """Plot and save stock data."""
+        plt.figure(figsize=(15, 5))
+        plt.plot(data)
+        plt.title(title)
+        plt.savefig(os.path.join(self.output_folder, filename), bbox_inches='tight')
+        plt.close()
 
-def plot_pacf_squared_returns(returns, filename):
-    """Generate and save PACF plot of squared returns."""
-    fig, ax = plt.subplots(figsize=(15, 5))
-    plot_pacf(returns**2, method="ywm", ax=ax)
-    plt.savefig(filename, bbox_inches='tight')
-    plt.close()
+    def plot_pacf_squared_returns(self, filename):
+        """Generate and save PACF plot of squared returns."""
+        fig, ax = plt.subplots(figsize=(15, 5))
+        plot_pacf(self.returns**2, method="ywm", ax=ax)
+        plt.savefig(os.path.join(self.output_folder, filename), bbox_inches='tight')
+        plt.close()
 
-def fit_garch_model(returns, p, q):
-    """Fit a GARCH model to returns and return the result."""
-    model = arch_model(returns, p=p, q=q, dist='skewt', vol="GARCH")
-    result = model.fit(disp='off')
-    return result
+    def fit_garch_model(self):
+        """Fit a GARCH model to returns and return the result."""
+        model = arch_model(self.returns, p=self.p, q=self.q, dist='skewt', vol="GARCH")
+        self.garch_result = model.fit(disp='off')
 
-def plot_garch_results(result, filename):
-    """Plot and save GARCH model results."""
-    fig = result.plot()
-    fig.set_size_inches(15, 5)
-    fig.savefig(filename, bbox_inches='tight')
-    plt.close()
+    def plot_garch_results(self, filename):
+        """Plot and save GARCH model results."""
+        fig = self.garch_result.plot()
+        fig.set_size_inches(15, 5)
+        fig.savefig(os.path.join(self.output_folder, filename), bbox_inches='tight')
+        plt.close()
 
-def plot_real_vs_predicted_returns(returns, conditional_volatility, filename):
-    """Plot and save real returns vs. conditional volatility from GARCH result."""
-    plt.figure(figsize=(15, 5))
-    plt.plot(returns, label="Real Returns")
-    plt.plot(conditional_volatility, label="Conditional Volatility")
-    plt.title("GARCH Model")
-    plt.legend(["Real Returns", "Conditional Volatility"])
-    plt.savefig(filename, bbox_inches='tight')
-    plt.close()
+    def plot_real_vs_predicted_returns(self, filename):
+        """Plot and save real returns vs. conditional volatility from GARCH result."""
+        plt.figure(figsize=(15, 5))
+        plt.plot(self.returns, label="Real Returns")
+        plt.plot(self.garch_result.conditional_volatility, label="Conditional Volatility")
+        plt.title("GARCH Model")
+        plt.legend(["Real Returns", "Conditional Volatility"])
+        plt.savefig(os.path.join(self.output_folder, filename), bbox_inches='tight')
+        plt.close()
 
-def simulate_garch_returns(garch_parameters, num_simulations, num_days_to_simulate):
-    """Simulate returns using GARCH parameters."""
-    sim_mod = arch_model(None, p=p, q=q, dist="skewt", vol="GARCH")
-    sim_df = pd.DataFrame(index=range(num_days_to_simulate), columns=range(num_simulations))
-    for i in range(num_simulations):
-        simulated_returns = sim_mod.simulate(garch_parameters, num_days_to_simulate)
-        sim_df[sim_df.columns[i]] = simulated_returns['data']
-    return sim_df
+    def simulate_garch_returns(self, num_simulations, num_days_to_simulate):
+        """Simulate returns using GARCH parameters."""
+        sim_mod = arch_model(None, p=self.p, q=self.q, dist="skewt", vol="GARCH")
+        sim_df = pd.DataFrame(index=range(num_days_to_simulate), columns=range(num_simulations))
+        for i in range(num_simulations):
+            simulated_returns = sim_mod.simulate(self.garch_result.params, num_days_to_simulate)
+            sim_df[sim_df.columns[i]] = simulated_returns['data']
+        sim_df.plot(legend=False, figsize=(15, 5))
+        plt.title("GARCH Simulation")
+        plt.savefig(os.path.join(self.output_folder, "simu_100.png"), bbox_inches='tight')
+        plt.close()
 
-# Constants
-symbol = "^FTSE"
-start_date = dt.datetime(2000, 1, 1)
-end_date = dt.datetime(2022, 12, 31)
-p = 3
-q = 3
+if __name__ == "__main__":
+    # Constants
+    symbol = "^FTSE"
+    start_date = dt.datetime(2000, 1, 1)
+    end_date = dt.datetime(2022, 12, 31)
+    p = 3
+    q = 3
+    
+    # Define output folder
+    absolute_path = os.path.abspath(__file__)
+    output_folder = os.path.dirname(absolute_path) + "/output_garch/"
 
-# Retrieve stock data
-print("Retrieving data from Yahoo Finance")
-ftse_data = retrieve_stock_data(symbol, start_date, end_date)
-
-# Plot and save trends
-plot_stock_data(ftse_data["Close"], "Close", os.path.join(output_folder, "ftse_close.png"))
-
-# Calculate returns
-print("Calculating returns")
-returns = calculate_returns(ftse_data["Close"])
-
-# Plot and save returns and squared returns
-plot_stock_data(returns, "Returns", os.path.join(output_folder, "returns.png"))
-plot_stock_data(returns**2, "Squared Returns", os.path.join(output_folder, "returns2.png"))
-
-# Generate and save PACF plot of squared returns
-print("Generating PACF plot")
-plot_pacf_squared_returns(returns, os.path.join(output_folder, "pacf.png"))
-
-# Fit GARCH model
-print("Fitting GARCH model")
-garch_result = fit_garch_model(returns, p, q)
-
-# Plot and save GARCH model results
-plot_garch_results(garch_result, os.path.join(output_folder, "garch_results.png"))
-
-# Plot real returns vs. conditional volatility from GARCH result
-plot_real_vs_predicted_returns(returns, garch_result.conditional_volatility, os.path.join(output_folder, "garch_plot.png"))
-
-# Generate and save simulated returns from GARCH model
-print("Simulating GARCH returns")
-simulated_returns = simulate_garch_returns(garch_result.params, num_simulations=100, num_days_to_simulate=1000)
-simulated_returns.plot(legend=False, figsize=(15, 5))
-plt.title("GARCH Simulation")
-plt.savefig(os.path.join(output_folder, "simu_100.png"), bbox_inches='tight')
-plt.close()
-
-print("Done with GARCH analysis!")
+    # Create GARCHAnalysis object
+    garch_analysis = GARCHAnalysis(symbol, start_date, end_date, p, q, output_folder)
+    
+    # Run analysis
+    print("Retrieving data from Yahoo Finance")
+    garch_analysis.retrieve_stock_data()
+    
+    # Plot and save trends
+    garch_analysis.plot_data(garch_analysis.data["Close"], "Close", "ftse_close.png")
+    
+    # Calculate returns
+    print("Calculating returns")
+    garch_analysis.calculate_returns()
+    
+    # Plot and save returns and squared returns
+    garch_analysis.plot_data(garch_analysis.returns, "Returns", "returns.png")
+    garch_analysis.plot_data(garch_analysis.returns**2, "Squared Returns", "returns2.png")
+    
+    # Generate and save PACF plot of squared returns
+    print("Generating PACF plot")
+    garch_analysis.plot_pacf_squared_returns("pacf.png")
+    
+    # Fit GARCH model
+    print("Fitting GARCH model")
+    garch_analysis.fit_garch_model()
+    
+    # Plot and save GARCH model results
+    garch_analysis.plot_garch_results("garch_results.png")
+    
+    # Plot real returns vs. conditional volatility from GARCH result
+    garch_analysis.plot_real_vs_predicted_returns("garch_plot.png")
+    
+    # Generate and save simulated returns from GARCH model
+    print("Simulating GARCH returns")
+    garch_analysis.simulate_garch_returns(num_simulations=100, num_days_to_simulate=1000)
+    
+    print("Done with GARCH analysis!")
