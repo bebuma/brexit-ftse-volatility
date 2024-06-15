@@ -79,7 +79,7 @@ class GARCHAnalysis:
         plt.savefig(os.path.join(self.output_folder, "simu_100.png"), bbox_inches='tight')
         plt.close()
 
-if __name__ == "__main__":
+def main():
     # Constants
     symbol = "^FTSE"
     start_date = dt.datetime(2000, 1, 1)
@@ -128,3 +128,7 @@ if __name__ == "__main__":
     garch_analysis.simulate_garch_returns(num_simulations=100, num_days_to_simulate=1000)
     
     print("Done with GARCH analysis!")
+    
+
+if __name__ == "__main__":
+    main()
